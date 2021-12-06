@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  nginx:
+   image: xpertmind/nginx:latest
+   container_name: nxtest
+   ports:
+      - 88:80
+#   volumes:
+#      - ./www:/var/www/html
+   restart: always
