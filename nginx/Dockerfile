@@ -33,6 +33,8 @@ RUN DEBIAN_FRONTEND=noninteractive \
   wget https://nginx.org/download/nginx-${NX_VER}.tar.gz && \
   tar xzf nginx-${NX_VER}.tar.gz && \
   cd /tmp/nginx-${NX_VER} && \
+  sed -i 's/\"Server: nginx\" CRLF/\"Server: XpertMind Web Server\" CRLF/'  ./src/http/ngx_http_header_filter_module.c && \
+  sed -i 's/\"Server: \" NGINX_VER CRLF/\"Server: XpertMind Web Server\" CRLF/'  ./src/http/ngx_http_header_filter_module.c && \
   ./configure \
     --prefix=/etc/nginx \
     --build=${NX_BUILD_NAME} \
