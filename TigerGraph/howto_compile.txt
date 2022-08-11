@@ -1,0 +1,4 @@
+docker build -t xpertmind/tigergraph:<version> .
+docker build --progress=plain -t xpertmind/tigergraph:<version> .
+docker tag xpertmind/tigergraph:latest xpertmind/tigergraph:<version>
+docker push xpertmind/tigergraph:latest
