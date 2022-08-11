@@ -1,33 +1,29 @@
-FROM ubuntu:20.04 as build
-ENV NX_VER 1.21.6
-ENV LINUX_VER 'Ubuntu 20.04'
-ENV NX_BUILD_NAME 'Ludbreg 1.21.6'
-ENV NX_BUILD_DATE 2022-02-05
-ARG DEBIAN_FRONTEND=noninteractive
-ARG WITH_DEBUG=false
-ARG WITH_RTMP=false
+FROM alpine:latest as build
+ENV NX_VER 1.21.5
+ENV LINUX_VER 'Alpine Latest'
+ENV NX_BUILD_NAME Ludbreg
+ENV NX_BUILD_DATE 2022-01-09
 LABEL maintainer="Bruno Šimić <bruno@xpertmind.de>" \
     architecture="amd64/x86_64" \
     nginx-version="${NX_VER}" \
-    ubuntu-version="${LINUX_VER}" \
+    linux-version="${LINUX_VER}" \
     build-date="${NX_BUILD_DATE}" \
     description="Nginx Docker image based on ${LINUX_VER} incl. (dynamic) Pagespeed module"
 
 COPY ./resources/* /tmp/
 
-RUN DEBIAN_FRONTEND=noninteractive \
-  runtime_pkgs="libpcre3 tzdata ca-certificates libgeoip-dev nano" && \
-  build_pkgs="build-essential uuid-dev unzip net-tools wget make gcc g++ pkg-config libpcre++-dev zlib1g-dev uuid-dev libpcre3-dev git libssl-dev zlib1g-dev libxslt1-dev libgd-dev" && \
-  addgroup --system --gid 101 nginx && \
-  adduser --system --disabled-login --ingroup nginx --no-create-home --gecos "nginx user" --shell /bin/false --uid 101 nginx &&\
+RUN build_pkgs="alpine-sdk build-base linux-headers zlib-dev net-tools pcre-dev util-linux-dev git make gcc g++ pkgconfig wget unzip shadow" && \
+  runtime_pkgs="bash tzdata ca-certificates libressl-dev libxslt-dev libgd geoip-dev nano" && \
+  apk --no-cache add ${build_pkgs} ${runtime_pkgs} && \
+  #addgroup --system --gid 101 nginx && \
+  #adduser --system --ingroup nginx --no-create-home --gecos "nginx user" --shell /bin/false --uid 101 nginx && \
   groupmod -g 82 www-data &&\
-  usermod -u 82 www-data &&\
-  DEBIAN_FRONTEND=noninteractive apt update && DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends --no-install-suggests -y ${runtime_pkgs} ${build_pkgs} && \
+  adduser --system --ingroup www-data --no-create-home --gecos "www-data user" --shell /bin/false --uid 82 www-data && \
   ## pagespeed
   mkdir -p /etc/nginx/modules && \
   cd /tmp && \
-  wget -O install_ps.sh https://ngxpagespeed.com/install && chmod 755 /tmp/install_ps.sh && \
-  ./install_ps.sh -y -v latest-stable -m -b /etc/nginx/modules/ && \
+  wget -O /tmp/install_ps.sh https://ngxpagespeed.com/install && chmod 755 /tmp/install_ps.sh && \
+  /tmp/install_ps.sh -y -v latest-stable -m -b /etc/nginx/modules/ && \
   cd /tmp && \
   wget https://nginx.org/download/nginx-${NX_VER}.tar.gz && \
   tar xzf nginx-${NX_VER}.tar.gz && \
@@ -39,10 +35,10 @@ RUN DEBIAN_FRONTEND=noninteractive \
     --conf-path=/etc/nginx/nginx.conf \
     --error-log-path=/var/log/nginx/error.log \
     --http-log-path=/var/log/nginx/access.log \
-    --pid-path=/var/run/nginx.pid \
-    --lock-path=/var/run/nginx.lock \
     --user=www-data \
     --group=www-data \
+    --pid-path=/var/run/nginx.pid \
+    --lock-path=/var/run/nginx.lock \
     --http-client-body-temp-path=/var/cache/nginx/client_temp \
     --http-proxy-temp-path=/var/cache/nginx/proxy_temp \
     --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
@@ -60,6 +56,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     --with-http_stub_status_module \
     --with-http_auth_request_module \
     --with-http_geoip_module \
+    --http-log-path=/var/log/nginx/access.log \
     --with-threads \
     --with-stream \
     --with-stream_ssl_module \
@@ -74,8 +71,8 @@ RUN DEBIAN_FRONTEND=noninteractive \
   make && \
   make install && \
 #  sed -i -e 's/#access_log  logs\/access.log  main;/access_log \/dev\/stdout;/' -e 's/#error_log  logs\/error.log  notice;/error_log stderr notice;/' /etc/nginx/nginx.conf && \
-
-  DEBIAN_FRONTEND=noninteractive apt clean && DEBIAN_FRONTEND=noninteractive apt purge ${build_pkgs} -y --auto-remove && \
+  apk del ${build_pkgs} && \
+  rm -rf /var/cache/apk/* && \
   mkdir -p /var/www/html && \
   mv /tmp/index.html /var/www/html/index.html &&\
   mv /tmp/nginx.conf /etc/nginx/nginx.conf &&\
@@ -83,8 +80,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
   chown -R www-data:www-data /var/www/html &&\
   chown -R www-data:www-data /var/cache/nginx &&\
   chown -R www-data:www-data /var/log/nginx &&\
-  rm -rf /tmp/* && rm -rfd /etc/nginx/modules/incubator-pagespeed-ngx-latest-stable && \
-  rm -rf /var/lib/apt/lists/*
+  rm -rf /tmp/* && rm -rfd /etc/nginx/modules/incubator-pagespeed-ngx-latest-stable
 
 # Define mountable directories.
 VOLUME ["/etc/nginx", "/var/log", "/var/www/html"]
