@@ -1,8 +1,8 @@
-FROM ubuntu:20.04 as build
-ENV NX_VER 1.21.6
-ENV LINUX_VER 'Ubuntu 20.04'
-ENV NX_BUILD_NAME 'Ludbreg 1.21.6'
-ENV NX_BUILD_DATE 2022-02-05
+FROM ubuntu:22.04 as build
+ENV NX_VER 1.23.1
+ENV LINUX_VER 'Ubuntu 22.04'
+ENV NX_BUILD_NAME 'Ludbreg 1.23.1'
+ENV NX_BUILD_DATE 2022-08-18
 ARG DEBIAN_FRONTEND=noninteractive
 ARG WITH_DEBUG=false
 ARG WITH_RTMP=false
@@ -24,17 +24,17 @@ RUN DEBIAN_FRONTEND=noninteractive \
   usermod -u 82 www-data &&\
   DEBIAN_FRONTEND=noninteractive apt update && DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends --no-install-suggests -y ${runtime_pkgs} ${build_pkgs} && \
   ## pagespeed
-  mkdir -p /etc/nginx/modules && \
-  cd /tmp && \
-  wget -O install_ps.sh https://ngxpagespeed.com/install && chmod 755 /tmp/install_ps.sh && \
-  ./install_ps.sh -y -v latest-stable -m -b /etc/nginx/modules/ && \
+#  mkdir -p /etc/nginx/modules && \
+#  cd /tmp && \
+#  wget -O install_ps.sh https://ngxpagespeed.com/install && chmod 755 /tmp/install_ps.sh && \
+#  ./install_ps.sh -y -v latest-stable -m -b /etc/nginx/modules/ && \
   cd /tmp && \
   wget https://nginx.org/download/nginx-${NX_VER}.tar.gz && \
   tar xzf nginx-${NX_VER}.tar.gz && \
   cd /tmp/nginx-${NX_VER} && \
   ./configure \
     --prefix=/etc/nginx \
-    --build=${NX_BUILD_NAME} \
+#    --build=${NX_BUILD_NAME} \
     --sbin-path=/usr/sbin/nginx \
     --conf-path=/etc/nginx/nginx.conf \
     --error-log-path=/var/log/nginx/error.log \
@@ -70,7 +70,8 @@ RUN DEBIAN_FRONTEND=noninteractive \
     --with-pcre-jit \
     --with-cc-opt='-O2 -fstack-protector-strong -Wformat -Werror=format-security -fPIC -D_FORTIFY_SOURCE=2' \
     --with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -fPIC' \
-    --add-dynamic-module=/etc/nginx/modules/incubator-pagespeed-ngx-latest-stable && \
+#    --add-dynamic-module=/etc/nginx/modules/incubator-pagespeed-ngx-latest-stable
+&& \
   make && \
   make install && \
 #  sed -i -e 's/#access_log  logs\/access.log  main;/access_log \/dev\/stdout;/' -e 's/#error_log  logs\/error.log  notice;/error_log stderr notice;/' /etc/nginx/nginx.conf && \
