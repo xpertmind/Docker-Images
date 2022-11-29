@@ -1,8 +1,9 @@
-FROM ubuntu:20.04 as build
-ENV NX_VER 1.21.6
-ENV LINUX_VER 'Ubuntu 20.04'
-ENV NX_BUILD_NAME 'Ludbreg 1.21.6'
-ENV NX_BUILD_DATE 2022-02-05
+FROM ubuntu:22.04 as build
+ENV NX_VER 1.23.2
+ENV LINUX_VER "Ubuntu 22.04 Jammy Jellyfish"
+ENV NX_BUILD_NAME "Ludbreg_${NX_VER}"
+ENV PSOL "jammy"
+ENV NX_BUILD_DATE 2022-11-28
 ARG DEBIAN_FRONTEND=noninteractive
 ARG WITH_DEBUG=false
 ARG WITH_RTMP=false
@@ -24,10 +25,12 @@ RUN DEBIAN_FRONTEND=noninteractive \
   usermod -u 82 www-data &&\
   DEBIAN_FRONTEND=noninteractive apt update && DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends --no-install-suggests -y ${runtime_pkgs} ${build_pkgs} && \
   ## pagespeed
-  mkdir -p /etc/nginx/modules && \
-  cd /tmp && \
-  wget -O install_ps.sh https://ngxpagespeed.com/install && chmod 755 /tmp/install_ps.sh && \
-  ./install_ps.sh -y -v latest-stable -m -b /etc/nginx/modules/ && \
+  mkdir -p /etc/nginx/modules/build-pagespeed && \
+  cd /etc/nginx/modules/build-pagespeed && \
+  wget http://www.tiredofit.nl/psol-${PSOL}.tar.xz && \
+  git clone --depth=1 https://github.com/apache/incubator-pagespeed-ngx.git && \
+  tar xvf psol-${PSOL}.tar.xz && \
+  mv psol incubator-pagespeed-ngx && \
   cd /tmp && \
   wget https://nginx.org/download/nginx-${NX_VER}.tar.gz && \
   tar xzf nginx-${NX_VER}.tar.gz && \
@@ -48,7 +51,9 @@ RUN DEBIAN_FRONTEND=noninteractive \
     --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
     --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
     --http-scgi-temp-path=/var/cache/nginx/scgi_temp \
+    --with-compat \
     --with-http_ssl_module \
+    --with-http_v2_module \
     --with-http_realip_module \
     --with-http_addition_module \
     --with-http_sub_module \
@@ -70,11 +75,10 @@ RUN DEBIAN_FRONTEND=noninteractive \
     --with-pcre-jit \
     --with-cc-opt='-O2 -fstack-protector-strong -Wformat -Werror=format-security -fPIC -D_FORTIFY_SOURCE=2' \
     --with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -fPIC' \
-    --add-dynamic-module=/etc/nginx/modules/incubator-pagespeed-ngx-latest-stable && \
+    --add-dynamic-module=/etc/nginx/modules/build-pagespeed/incubator-pagespeed-ngx && \
   make && \
   make install && \
 #  sed -i -e 's/#access_log  logs\/access.log  main;/access_log \/dev\/stdout;/' -e 's/#error_log  logs\/error.log  notice;/error_log stderr notice;/' /etc/nginx/nginx.conf && \
-
   DEBIAN_FRONTEND=noninteractive apt clean && DEBIAN_FRONTEND=noninteractive apt purge ${build_pkgs} -y --auto-remove && \
   mkdir -p /var/www/html && \
   mv /tmp/index.html /var/www/html/index.html &&\
@@ -83,7 +87,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
   chown -R www-data:www-data /var/www/html &&\
   chown -R www-data:www-data /var/cache/nginx &&\
   chown -R www-data:www-data /var/log/nginx &&\
-  rm -rf /tmp/* && rm -rfd /etc/nginx/modules/incubator-pagespeed-ngx-latest-stable && \
+  rm -rf /tmp/* && rm -rfd /etc/nginx/modules/build-pagespeed && \
   rm -rf /var/lib/apt/lists/*
 
 # Define mountable directories.
