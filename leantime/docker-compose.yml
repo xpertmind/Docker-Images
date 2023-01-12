@@ -1,0 +1,79 @@
+version: '2.4'
+
+services:
+  leantime-app:
+    image: xpertmind/leantime
+    container_name: leantime-app
+    expose:
+      - "80"
+    links:
+      - leantime-db
+    volumes:
+    ### If you want to perform customizations to the source and have access to it, then uncomment this line - This includes modules
+      #- ./data:/www/html
+    ### Or, if you just want to use Stock leantime and hold onto persistent files like cache and session use this, one or the other.
+      - ./data:/data
+      - ./logs/:/www/logs
+    environment:
+      - TIMEZONE=Europe/Zagreb
+      - CONTAINER_NAME=leantime-app
+
+      - DB_HOST=leantime-db
+      - DB_NAME=leantime
+      - DB_USER=leantime
+      - DB_PASS=leantime
+
+      - SITE_URL=https://leantime.example.com
+      - SITE_NAME=Leantime
+      - ADMIN_EMAIL=admin@example.com
+      - ADMIN_PASS=admin
+      - ADMIN_FIRST_NAME=Leantime
+      - ADMIN_LAST_NAME=Administrator
+      - COMPANY_NAME=Example Company
+    networks:
+      - services
+    restart: always
+
+  leantime-db:
+    image: tiredofit/mariadb
+    container_name: leantime-db
+    volumes:
+      - ./db:/var/lib/mysql
+    environment:
+      - ROOT_PASS=password
+      - DB_NAME=leantime
+      - DB_USER=leantime
+      - DB_PASS=leantime
+
+      - CONTAINER_NAME=leantime-db
+    networks:
+      - services
+    restart: always
+
+  leantime-db-backup:
+    container_name: leantime-db-backup
+    image: tiredofit/db-backup
+    links:
+     - leantime-db
+    volumes:
+      - ./dbbackup:/backup
+    environment:
+      - CONTAINER_NAME=leantime-db-backup
+      - DB_HOST=leantime-db
+      - DB_TYPE=mariadb
+      - DB_NAME=leantime
+      - DB_USER=leantime
+      - DB_PASS=leantime
+      - DB_DUMP_FREQ=1440
+      - DB_DUMP_BEGIN=0000
+      - DB_CLEANUP_TIME=8640
+    networks:
+      - services
+    restart: always
+
+networks:
+  proxy:
+    external: true
+  services:
+    external: true
+
