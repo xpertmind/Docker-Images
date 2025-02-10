@@ -1,3 +1,3 @@
 #/bin/bash
-docker build --compress -t xpertmind/nginx:latest .
-docker push xpertmind/nginx:latest
+podman build --compress -t xpertmind/nginx:latest .
+podman push xpertmind/nginx:latest
