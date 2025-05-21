@@ -1,8 +1,0 @@
-load_from:
-  - python_file:
-      relative_path: hello_world_repository.py
-      attribute: hello_world_repository
-      working_directory: my_working_directory/
-      executable_path: venvs/path/to/python
-      location_name: my_location
-
