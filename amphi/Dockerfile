@@ -2,23 +2,26 @@ FROM ubuntu:22.04 as build
 
 LABEL maintainer="Bruno Šimić <bruno@simicmail.com>" \ 
   ubuntu-version="22.04" \
-  build-date="2025-01-24" \
+  build-date="2025-03-13" \
   description="Amphi Docker Image without login"
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Zagreb
 
 COPY ./resources/jupyter_*.py /tmp/
 
-RUN \
-  runtime_pkgs="nano python3-pip iputils-ping" && \
-  DEBIAN_FRONTEND=noninteractive apt update && apt install --no-install-recommends --no-install-suggests -y ${runtime_pkgs}  && \
-  pip install amphi-etl SQLAlchemy nodejs jsonpath-ng lxml beautifulsoup4 html5lib && \
-  useradd -ms /bin/bash amphi && \
-  mkdir -p /home/amphi/.jupyter && \
-  mv ./tmp/jupyter_*.py /home/amphi/.jupyter/
+RUN DEBIAN_FRONTEND=noninteractive  \
+  apt_pkgs="nano python3-full libpq-dev python3-dev python3-pip build-essential python3-psycopg2 net-tools dnsutils iputils-ping" && \
+  pip_pkgs="ensurepath jupyterhub-dummyAuthenticator amphi-etl SQLAlchemy nodejs jsonpath-ng lxml beautifulsoup4 html5lib argcomplete s3fs" && \
+  apt update && apt install --no-install-recommends --no-install-suggests -y ${apt_pkgs} && \
+  python3 -m pip install ${pip_pkgs} && \
+  #--break-system-packages && \
+ useradd -ms /bin/bash amphi && \
+ mkdir -p /home/amphi/.jupyter && \
+ mv ./tmp/jupyter_*.py /home/amphi/.jupyter/
 
 USER amphi
 # Define working directory.
 WORKDIR /home/amphi
-
 
 EXPOSE 8888
 #Define mountable directories.
